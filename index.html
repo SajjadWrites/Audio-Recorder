@@ -3,119 +3,355 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Web Audio Recorder</title>
+    <title>Pro Audio Recorder</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e293b">
     <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #2ec4b6;
+            --danger: #e71d36;
+            --border: #334155;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            background-color: #f4f6f9;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
+
         .container {
-            background: white;
+            background: var(--card-bg);
             padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
             text-align: center;
+            width: 100%;
+            max-width: 450px;
+            border: 1px solid var(--border);
         }
-        h1 { color: #333; margin-bottom: 20px; }
-        button {
-            font-size: 16px;
-            padding: 12px 24px;
-            margin: 10px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
+
+        h1 { margin-top: 0; font-size: 24px; letter-spacing: -0.5px; }
+        
+        .timer {
+            font-size: 48px;
+            font-family: monospace;
             font-weight: bold;
-            transition: background 0.2s;
+            margin: 15px 0;
+            color: var(--primary);
         }
-        #startBtn { background-color: #2ec4b6; color: white; }
-        #startBtn:hover { background-color: #20a498; }
-        #stopBtn { background-color: #e71d36; color: white; }
-        #stopBtn:hover { background-color: #c11224; }
+
+        /* Audio Visualizer Waveform */
+        canvas {
+            width: 100%;
+            height: 60px;
+            background: #020617;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            font-size: 15px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        #startBtn { background-color: var(--primary); color: #0f172a; }
+        #pauseBtn { background-color: #eab308; color: #0f172a; }
+        #stopBtn { background-color: var(--danger); color: white; }
+        
         button:disabled {
-            background-color: #cccccc !important;
+            background-color: #475569 !important;
+            color: var(--text-muted) !important;
             cursor: not-allowed;
+            opacity: 0.5;
         }
-        #status {
-            margin-top: 15px;
-            font-weight: 500;
-            color: #666;
+
+        /* Settings and History Layout */
+        .section-title {
+            text-align: left;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin: 25px 0 10px 0;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 5px;
         }
-        audio {
-            margin-top: 20px;
-            display: none;
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            text-align: left;
+            font-size: 14px;
         }
+
+        select, input {
+            background: #0f172a;
+            color: white;
+            border: 1px solid var(--border);
+            padding: 8px;
+            border-radius: 6px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .history-list {
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        .history-item {
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .history-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        audio { width: 100%; margin-top: 5px; }
+
+        .btn-download {
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        .btn-download:hover { background: var(--primary); color: #0f172a; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Web Audio Recorder</h1>
-    <button id="startBtn">Start Recording</button>
-    <button id="stopBtn" disabled>Stop Recording</button>
-    <div id="status">Status: Idle</div>
-    <audio id="audioPlayback" controls></audio>
+    <h1>Pro Audio Recorder</h1>
+    
+    <div class="timer" id="timerDisplay">00:00</div>
+    <canvas id="visualizer"></canvas>
+
+    <div class="controls">
+        <button id="startBtn">🔴 Record</button>
+        <button id="pauseBtn" disabled>⏸️ Pause</button>
+        <button id="stopBtn" disabled>⏹️ Stop</button>
+    </div>
+
+    <div class="section-title">Recording Settings</div>
+    <div class="settings-grid">
+        <div>
+            <label for="fileNameInput">File Name Prefix</label>
+            <input type="text" id="fileNameInput" value="VoiceMemo">
+        </div>
+        <div>
+            <label for="audioFormat">Audio Quality</label>
+            <select id="audioFormat">
+                <option value="audio/webm;codecs=opus">High (WebM/Opus)</option>
+                <option value="audio/wav">Universal (WAV)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="section-title">Saved Sessions (This Context)</div>
+    <div class="history-list" id="historyList">
+        </div>
 </div>
 
 <script>
     let mediaRecorder;
     let audioChunks = [];
+    let startTime;
+    let timerInterval;
+    let elapsedTime = 0;
+    let audioContext, analyser, dataArray, canvasContext, source, animationFrameId;
 
     const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
     const stopBtn = document.getElementById('stopBtn');
-    const statusDiv = document.getElementById('status');
-    const audioPlayback = document.getElementById('audioPlayback');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const canvas = document.getElementById('visualizer');
+    const historyList = document.getElementById('historyList');
+    
+    canvasContext = canvas.getContext('2d');
 
+    // --- Core Recording Functions ---
     startBtn.addEventListener('click', async () => {
-        audioChunks = []; // Clear previous data
+        audioChunks = [];
+        const mimeType = document.getElementById('audioFormat').value;
         
         try {
-            // Request microphone access from the browser
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             
-            mediaRecorder = new MediaRecorder(stream);
+            // Setup MediaRecorder
+            const options = MediaRecorder.isTypeSupported(mimeType) ? { mimeType } : {};
+            mediaRecorder = new MediaRecorder(stream, options);
             
-            // Collect audio data as it becomes available
-            mediaRecorder.ondataavailable = event => {
-                audioChunks.push(event.data);
-            };
+            // Setup Live Audio Visualizer
+            setupVisualizer(stream);
 
-            // When recording stops, compile data into a playable audio file
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            
             mediaRecorder.onstop = () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                const audioUrl = URL.createObjectURL(audioBlob);
-                audioPlayback.src = audioUrl;
-                audioPlayback.style.display = 'block'; // Show the audio player
-                statusDiv.innerText = "Status: Recording saved! Click play below.";
+                const blob = new Blob(audioChunks, { type: mimeType });
+                saveToHistory(blob);
+                resetUI();
             };
 
-            mediaRecorder.start();
-            statusDiv.innerText = "Status: Recording...";
+            mediaRecorder.start(250); // Slice data every 250ms for performance
+            startTime = Date.now() - elapsedTime;
+            startTimer();
+            
             startBtn.disabled = true;
+            pauseBtn.disabled = false;
             stopBtn.disabled = false;
-            audioPlayback.style.display = 'none'; // Hide player while recording new audio
-
+            pauseBtn.innerText = "⏸️ Pause";
         } catch (err) {
-            console.error("Error accessing microphone:", err);
-            statusDiv.innerText = "Status: Error accessing microphone. Ensure permissions are granted.";
+            alert("Error accessing microphone: " + err.message);
+        }
+    });
+
+    pauseBtn.addEventListener('click', () => {
+        if (mediaRecorder.state === "recording") {
+            mediaRecorder.pause();
+            clearInterval(timerInterval);
+            elapsedTime = Date.now() - startTime;
+            pauseBtn.innerText = "▶️ Resume";
+        } else if (mediaRecorder.state === "paused") {
+            mediaRecorder.resume();
+            startTime = Date.now() - elapsedTime;
+            startTimer();
+            pauseBtn.innerText = "⏸️ Pause";
         }
     });
 
     stopBtn.addEventListener('click', () => {
-        // Stop the recording logic
         mediaRecorder.stop();
-        
-        // Stop the actual microphone hardware stream to turn off the recording light
         mediaRecorder.stream.getTracks().forEach(track => track.stop());
-
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
+        cancelAnimationFrame(animationFrameId);
     });
+
+    // --- Helper UI/UX Features ---
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            const totalSeconds = Math.floor((Date.now() - startTime) / 1000);
+            const mins = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+            const secs = String(totalSeconds % 60).padStart(2, '0');
+            timerDisplay.innerText = `${mins}:${secs}`;
+        }, 1000);
+    }
+
+    function resetUI() {
+        clearInterval(timerInterval);
+        elapsedTime = 0;
+        timerDisplay.innerText = "00:00";
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
+        stopBtn.disabled = true;
+        pauseBtn.innerText = "⏸️ Pause";
+        
+        // Clear canvas visualizer
+        canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function saveToHistory(blob) {
+        const prefix = document.getElementById('fileNameInput').value || "Recording";
+        const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const dateStr = new Date().toLocaleDateString();
+        const extension = blob.type.includes('wav') ? 'wav' : 'webm';
+        const fileName = `${prefix}_${dateStr.replace(/\//g, '-')}_${timestamp}.${extension}`;
+        
+        const audioUrl = URL.createObjectURL(blob);
+        
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.innerHTML = `
+            <div class="history-meta">
+                <strong>${fileName}</strong>
+                <span>${timestamp}</span>
+            </div>
+            <audio controls src="${audioUrl}"></audio>
+            <br>
+            <button class="btn-download" onclick="downloadAudio('${audioUrl}', '${fileName}')">💾 Download File</button>
+        `;
+        historyList.insertBefore(item, historyList.firstChild);
+    }
+
+    window.downloadAudio = function(url, filename) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+    };
+
+    // --- Live Waveform Visualizer Logic ---
+    function setupVisualizer(stream) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyser);
+        
+        analyser.fftSize = 256;
+        const bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+        
+        function draw() {
+            animationFrameId = requestAnimationFrame(draw);
+            analyser.getByteFrequencyData(dataArray);
+            
+            canvasContext.fillStyle = '#020617';
+            canvasContext.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const barWidth = (canvas.width / bufferLength) * 1.5;
+            let barHeight;
+            let x = 0;
+            
+            for (let i = 0; i < bufferLength; i++) {
+                barHeight = dataArray[i] / 2.5;
+                // Create a sleek color gradient for waves
+                canvasContext.fillStyle = `rgb(46, 196, 182)`;
+                canvasContext.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
+                x += barWidth;
+            }
+        }
+        draw();
+    }
 </script>
 
 </body>
