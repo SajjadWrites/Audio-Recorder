@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Audio Recorder</title>
+    <title>Voice Log Cataloger</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1e293b">
     <style>
@@ -18,102 +18,93 @@
         }
 
         body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            min-height: 100vh;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
             padding: 20px;
             box-sizing: border-box;
+            min-height: 100vh;
         }
 
         .container {
             background: var(--card-bg);
-            padding: 30px;
+            padding: 25px;
             border-radius: 16px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.3);
             text-align: center;
             width: 100%;
-            max-width: 450px;
+            max-width: 500px;
             border: 1px solid var(--border);
+            margin-bottom: 20px;
         }
 
-        h1 { margin-top: 0; font-size: 24px; letter-spacing: -0.5px; }
+        h1 { margin-top: 0; font-size: 22px; }
         
         .timer {
-            font-size: 48px;
+            font-size: 42px;
             font-family: monospace;
             font-weight: bold;
-            margin: 15px 0;
+            margin: 10px 0;
             color: var(--primary);
         }
 
-        /* Audio Visualizer Waveform */
         canvas {
             width: 100%;
-            height: 60px;
+            height: 50px;
             background: #020617;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             border: 1px solid var(--border);
         }
 
         .controls {
             display: flex;
             justify-content: center;
-            gap: 12px;
+            gap: 10px;
             margin-bottom: 20px;
         }
 
         button {
-            font-size: 15px;
-            padding: 12px 20px;
+            font-size: 14px;
+            padding: 10px 18px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
             transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
         }
 
         #startBtn { background-color: var(--primary); color: #0f172a; }
         #pauseBtn { background-color: #eab308; color: #0f172a; }
         #stopBtn { background-color: var(--danger); color: white; }
-        
-        button:disabled {
-            background-color: #475569 !important;
-            color: var(--text-muted) !important;
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
+        button:disabled { background-color: #475569 !important; color: var(--text-muted) !important; opacity: 0.5; cursor: not-allowed; }
 
-        /* Settings and History Layout */
         .section-title {
             text-align: left;
-            font-size: 14px;
+            font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: var(--text-muted);
-            margin: 25px 0 10px 0;
+            margin: 20px 0 10px 0;
             border-bottom: 1px solid var(--border);
             padding-bottom: 5px;
         }
 
-        .settings-grid {
+        .meta-input-group {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
             text-align: left;
-            font-size: 14px;
+            font-size: 13px;
+            margin-bottom: 10px;
         }
 
-        select, input {
+        label { display: block; margin-bottom: 4px; color: var(--text-muted); }
+        select, input, textarea {
             background: #0f172a;
             color: white;
             border: 1px solid var(--border);
@@ -121,49 +112,88 @@
             border-radius: 6px;
             width: 100%;
             box-sizing: border-box;
+            font-family: inherit;
+        }
+        textarea { resize: vertical; height: 60px; }
+
+        /* Catalog Styles */
+        .catalog-container {
+            width: 100%;
+            max-width: 500px;
         }
 
-        .history-list {
-            text-align: left;
-            max-height: 200px;
-            overflow-y: auto;
-            margin-top: 10px;
+        .search-box {
+            margin-bottom: 15px;
         }
 
-        .history-item {
-            background: #0f172a;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 8px;
+        .log-card {
+            background: var(--card-bg);
             border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            text-align: left;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
-        .history-meta {
-            font-size: 12px;
-            color: var(--text-muted);
+        .log-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 5px;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .log-title { font-weight: bold; font-size: 16px; color: var(--text-color); }
+        .log-date { font-size: 12px; color: var(--text-muted); }
+        
+        .tag-badge {
+            display: inline-block;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+        .tag-work { background: #3b82f6; color: white; }
+        .tag-personal { background: #ec4899; color: white; }
+        .tag-idea { background: #eab308; color: #0f172a; }
+        .tag-journal { background: #8b5cf6; color: white; }
+        .tag-custom { background: #64748b; color: white; }
+
+        .log-notes {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin: 8px 0;
+            background: #0f172a;
+            padding: 8px;
+            border-radius: 6px;
+            border-left: 3px solid var(--primary);
         }
 
         audio { width: 100%; margin-top: 5px; }
-
-        .btn-download {
-            background: transparent;
-            color: var(--primary);
-            border: 1px solid var(--primary);
-            padding: 4px 8px;
-            font-size: 12px;
-            border-radius: 4px;
-            margin-top: 5px;
+        
+        .card-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
         }
-        .btn-download:hover { background: var(--primary); color: #0f172a; }
+        .action-btn {
+            background: transparent;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+        .action-btn.download { border-color: var(--primary); color: var(--primary); }
+        .action-btn.delete { border-color: var(--danger); color: var(--danger); }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Pro Audio Recorder</h1>
+    <h1>Voice Log Controller</h1>
     
     <div class="timer" id="timerDisplay">00:00</div>
     <canvas id="visualizer"></canvas>
@@ -171,93 +201,104 @@
     <div class="controls">
         <button id="startBtn">🔴 Record</button>
         <button id="pauseBtn" disabled>⏸️ Pause</button>
-        <button id="stopBtn" disabled>⏹️ Stop</button>
+        <button id="stopBtn" disabled>⏹️ Save Log</button>
     </div>
 
-    <div class="section-title">Recording Settings</div>
-    <div class="settings-grid">
+    <div class="section-title">Log Metadata</div>
+    <div class="meta-input-group">
         <div>
-            <label for="fileNameInput">File Name Prefix</label>
-            <input type="text" id="fileNameInput" value="VoiceMemo">
+            <label for="logTitle">Log Title</label>
+            <input type="text" id="logTitle" value="Voice Entry">
         </div>
         <div>
-            <label for="audioFormat">Audio Quality</label>
-            <select id="audioFormat">
-                <option value="audio/webm;codecs=opus">High (WebM/Opus)</option>
-                <option value="audio/wav">Universal (WAV)</option>
-            </select>
+            <label for="logTag">Category Tag</label>
+            <div style="display: flex; gap: 5px;">
+                <select id="logTag">
+                    <option value="personal">🌸 Personal</option>
+                    <option value="work">💼 Work</option>
+                    <option value="idea">💡 Idea</option>
+                    <option value="journal">📖 Journal</option>
+                </select>
+                <button id="addTagBtn" style="padding: 8px 12px; background: #475569; color: white; margin: 0; border-radius: 6px;">+</button>
+            </div>
         </div>
     </div>
+    <div style="text-align: left; font-size: 13px;">
+        <label for="logNotes">Summary / Log Notes</label>
+        <textarea id="logNotes" placeholder="Add keywords, thoughts, or bullet points here..."></textarea>
+    </div>
+</div>
 
-    <div class="section-title">Saved Sessions (This Context)</div>
-    <div class="history-list" id="historyList">
+<div class="catalog-container">
+    <div class="section-title">🗂️ Permanent Voice Catalogue</div>
+    <input type="text" id="searchBar" class="search-box" placeholder="🔍 Search notes, titles, or tags...">
+    
+    <div id="catalogList">
         </div>
 </div>
 
 <script>
-    let mediaRecorder;
-    let audioChunks = [];
-    let startTime;
-    let timerInterval;
-    let elapsedTime = 0;
+    let mediaRecorder, audioChunks = [], startTime, timerInterval, elapsedTime = 0;
     let audioContext, analyser, dataArray, canvasContext, source, animationFrameId;
 
-    const startBtn = document.getElementById('startBtn');
-    const pauseBtn = document.getElementById('pauseBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const timerDisplay = document.getElementById('timerDisplay');
-    const canvas = document.getElementById('visualizer');
-    const historyList = document.getElementById('historyList');
+    const startBtn = document.getElementById('startBtn'), pauseBtn = document.getElementById('pauseBtn'), stopBtn = document.getElementById('stopBtn');
+    const timerDisplay = document.getElementById('timerDisplay'), canvas = document.getElementById('visualizer'), catalogList = document.getElementById('catalogList'), searchBar = document.getElementById('searchBar');
+    const addTagBtn = document.getElementById('addTagBtn'), logTagSelect = document.getElementById('logTag');
     
     canvasContext = canvas.getContext('2d');
 
-    // --- Core Recording Functions ---
+    // Lifecycle setups
+    window.addEventListener('DOMContentLoaded', () => {
+        loadCatalog();
+        loadCustomTags();
+    });
+    searchBar.addEventListener('input', filterCatalog);
+
+    addTagBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const newTag = prompt("Enter custom tag name (e.g. ProjectX, Reminders):");
+        if (newTag) {
+            const sanitizedTag = newTag.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+            if (!sanitizedTag) return alert("Invalid tag name.");
+            
+            let customTags = JSON.parse(localStorage.getItem('customVoiceTags')) || [];
+            if (!customTags.includes(sanitizedTag)) {
+                customTags.push(sanitizedTag);
+                localStorage.setItem('customVoiceTags', JSON.stringify(customTags));
+                addTagToDropdown(sanitizedTag);
+                logTagSelect.value = sanitizedTag;
+            } else {
+                alert("This tag already exists!");
+            }
+        }
+    });
+
     startBtn.addEventListener('click', async () => {
         audioChunks = [];
-        const mimeType = document.getElementById('audioFormat').value;
-        
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            
-            // Setup MediaRecorder
-            const options = MediaRecorder.isTypeSupported(mimeType) ? { mimeType } : {};
-            mediaRecorder = new MediaRecorder(stream, options);
-            
-            // Setup Live Audio Visualizer
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
             setupVisualizer(stream);
 
             mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-            
             mediaRecorder.onstop = () => {
-                const blob = new Blob(audioChunks, { type: mimeType });
-                saveToHistory(blob);
+                const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                convertToBase64AndSave(blob);
                 resetUI();
             };
 
-            mediaRecorder.start(250); // Slice data every 250ms for performance
+            mediaRecorder.start(250);
             startTime = Date.now() - elapsedTime;
             startTimer();
-            
-            startBtn.disabled = true;
-            pauseBtn.disabled = false;
-            stopBtn.disabled = false;
-            pauseBtn.innerText = "⏸️ Pause";
-        } catch (err) {
-            alert("Error accessing microphone: " + err.message);
-        }
+            toggleButtons(true);
+        } catch (err) { alert("Microphone access required."); }
     });
 
     pauseBtn.addEventListener('click', () => {
         if (mediaRecorder.state === "recording") {
-            mediaRecorder.pause();
-            clearInterval(timerInterval);
-            elapsedTime = Date.now() - startTime;
-            pauseBtn.innerText = "▶️ Resume";
+            mediaRecorder.pause(); clearInterval(timerInterval); elapsedTime = Date.now() - startTime; pauseBtn.innerText = "▶️ Resume";
         } else if (mediaRecorder.state === "paused") {
-            mediaRecorder.resume();
-            startTime = Date.now() - elapsedTime;
-            startTimer();
-            pauseBtn.innerText = "⏸️ Pause";
+            mediaRecorder.resume(); startTime = Date.now() - elapsedTime; startTimer(); pauseBtn.innerText = "⏸️ Pause";
         }
     });
 
@@ -267,92 +308,154 @@
         cancelAnimationFrame(animationFrameId);
     });
 
-    // --- Helper UI/UX Features ---
     function startTimer() {
         timerInterval = setInterval(() => {
             const totalSeconds = Math.floor((Date.now() - startTime) / 1000);
-            const mins = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
-            const secs = String(totalSeconds % 60).padStart(2, '0');
-            timerDisplay.innerText = `${mins}:${secs}`;
+            timerDisplay.innerText = `${String(Math.floor(totalSeconds / 60)).padStart(2, '0')}:${String(totalSeconds % 60).padStart(2, '0')}`;
         }, 1000);
     }
 
     function resetUI() {
-        clearInterval(timerInterval);
-        elapsedTime = 0;
-        timerDisplay.innerText = "00:00";
-        startBtn.disabled = false;
-        pauseBtn.disabled = true;
-        stopBtn.disabled = true;
-        pauseBtn.innerText = "⏸️ Pause";
-        
-        // Clear canvas visualizer
+        clearInterval(timerInterval); elapsedTime = 0; timerDisplay.innerText = "00:00";
+        toggleButtons(false); pauseBtn.innerText = "⏸️ Pause";
         canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+        document.getElementById('logNotes').value = '';
     }
 
-    function saveToHistory(blob) {
-        const prefix = document.getElementById('fileNameInput').value || "Recording";
-        const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        const dateStr = new Date().toLocaleDateString();
-        const extension = blob.type.includes('wav') ? 'wav' : 'webm';
-        const fileName = `${prefix}_${dateStr.replace(/\//g, '-')}_${timestamp}.${extension}`;
-        
-        const audioUrl = URL.createObjectURL(blob);
-        
-        const item = document.createElement('div');
-        item.className = 'history-item';
-        item.innerHTML = `
-            <div class="history-meta">
-                <strong>${fileName}</strong>
-                <span>${timestamp}</span>
-            </div>
-            <audio controls src="${audioUrl}"></audio>
-            <br>
-            <button class="btn-download" onclick="downloadAudio('${audioUrl}', '${fileName}')">💾 Download File</button>
-        `;
-        historyList.insertBefore(item, historyList.firstChild);
+    function toggleButtons(isRecording) {
+        startBtn.disabled = isRecording; pauseBtn.disabled = !isRecording; stopBtn.disabled = !isRecording;
     }
 
-    window.downloadAudio = function(url, filename) {
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
+    // Database Architecture Logic
+    function convertToBase64AndSave(blob) {
+        const reader = new FileReader();
+        reader.readAsDataURL(blob); 
+        reader.onloadend = function() {
+            const base64Audio = reader.result;
+            const currentTag = document.getElementById('logTag').value;
+            
+            const logEntry = {
+                id: Date.now(),
+                title: document.getElementById('logTitle').value || 'Untitled Entry',
+                tag: currentTag,
+                notes: document.getElementById('logNotes').value || 'No descriptions added.',
+                date: new Date().toLocaleDateString(),
+                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                audio: base64Audio
+            };
+
+            let currentLogs = JSON.parse(localStorage.getItem('voiceLogs')) || [];
+            currentLogs.unshift(logEntry);
+            localStorage.setItem('voiceLogs', JSON.stringify(currentLogs));
+            loadCatalog();
+        }
+    }
+
+    function loadCustomTags() {
+        let customTags = JSON.parse(localStorage.getItem('customVoiceTags')) || [];
+        customTags.forEach(tag => {
+            if (![...logTagSelect.options].some(option => option.value === tag)) {
+                addTagToDropdown(tag);
+            }
+        });
+    }
+
+    function addTagToDropdown(tag) {
+        const option = document.createElement('option');
+        option.value = tag;
+        option.innerText = `🏷️ ${tag.charAt(0).toUpperCase() + tag.slice(1)}`;
+        logTagSelect.appendChild(option);
+    }
+
+    function loadCatalog() {
+        catalogList.innerHTML = '';
+        const logs = JSON.parse(localStorage.getItem('voiceLogs')) || [];
+        const builtInTags = ['personal', 'work', 'idea', 'journal'];
+        
+        if(logs.length === 0) {
+            catalogList.innerHTML = `<div style="text-align:center; color:var(--text-muted); margin-top:20px;">No logs saved yet.</div>`;
+            return;
+        }
+
+        logs.forEach(log => {
+            const badgeClass = builtInTags.includes(log.tag) ? `tag-${log.tag}` : 'tag-custom';
+            const card = document.createElement('div');
+            card.className = 'log-card';
+            card.setAttribute('data-search', `${log.title} ${log.tag} ${log.notes}`.toLowerCase());
+            card.innerHTML = `
+                <div class="log-header">
+                    <div>
+                        <div class="log-title">${log.title}</div>
+                        <span class="tag-badge ${badgeClass}">${log.tag}</span>
+                    </div>
+                    <div class="log-date">${log.date} @ ${log.time}</div>
+                </div>
+                <div class="log-notes">${log.notes}</div>
+                <audio controls src="${log.audio}"></audio>
+                <div class="card-actions">
+                    <button class="action-btn download" onclick="downloadItem('${log.audio}', '${log.title}.webm')">💾 Save Export</button>
+                    <button class="action-btn delete" onclick="deleteItem(${log.id})">🗑️ Delete Log</button>
+                </div>
+            `;
+            catalogList.appendChild(card);
+        });
+    }
+
+    function filterCatalog(e) {
+        const query = e.target.value.toLowerCase();
+        const cards = document.querySelectorAll('.log-card');
+        cards.forEach(card => {
+            const content = card.getAttribute('data-search');
+            card.style.display = content.includes(query) ? 'block' : 'none';
+        });
+    }
+
+    window.downloadItem = function(url, filename) {
+        const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
     };
 
-    // --- Live Waveform Visualizer Logic ---
+    window.deleteItem = function(id) {
+        if(confirm("Are you sure you want to delete this log permanently from your phone?")) {
+            let currentLogs = JSON.parse(localStorage.getItem('voiceLogs')) || [];
+            currentLogs = currentLogs.filter(log => log.id !== id);
+            localStorage.setItem('voiceLogs', JSON.stringify(currentLogs));
+            loadCatalog();
+        }
+    };
+
     function setupVisualizer(stream) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         analyser = audioContext.createAnalyser();
         source = audioContext.createMediaStreamSource(stream);
         source.connect(analyser);
-        
-        analyser.fftSize = 256;
+        analyser.fftSize = 128;
         const bufferLength = analyser.frequencyBinCount;
         dataArray = new Uint8Array(bufferLength);
         
         function draw() {
             animationFrameId = requestAnimationFrame(draw);
             analyser.getByteFrequencyData(dataArray);
-            
             canvasContext.fillStyle = '#020617';
             canvasContext.fillRect(0, 0, canvas.width, canvas.height);
-            
-            const barWidth = (canvas.width / bufferLength) * 1.5;
-            let barHeight;
+            const barWidth = (canvas.width / bufferLength) * 2;
             let x = 0;
-            
             for (let i = 0; i < bufferLength; i++) {
-                barHeight = dataArray[i] / 2.5;
-                // Create a sleek color gradient for waves
+                let barHeight = dataArray[i] / 3;
                 canvasContext.fillStyle = `rgb(46, 196, 182)`;
-                canvasContext.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
+                canvasContext.fillRect(x, canvas.height - barHeight, barWidth - 2, barHeight);
                 x += barWidth;
             }
         }
         draw();
     }
-</script>
 
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('PWA Active'))
+                .catch(err => console.log('SW registration missing'));
+        });
+    }
+</script>
 </body>
 </html>
