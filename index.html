@@ -116,7 +116,6 @@
         }
         textarea { resize: vertical; height: 60px; }
 
-        /* Catalog Layout */
         .catalog-container {
             width: 100%;
             max-width: 500px;
@@ -169,7 +168,7 @@
             padding: 8px;
             border-radius: 6px;
             border-left: 3px solid var(--primary);
-            white-space: pre-wrap; /* Maintains line-breaks in summaries */
+            white-space: pre-wrap;
         }
 
         audio { width: 100%; margin-top: 5px; }
@@ -185,3 +184,175 @@
             padding: 4px 8px;
             border-radius: 4px;
             border: 1px solid var(--border);
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+        .action-btn.download { border-color: var(--primary); color: var(--primary); }
+        .action-btn.edit { border-color: #eab308; color: #eab308; }
+        .action-btn.delete { border-color: var(--danger); color: var(--danger); }
+        .action-btn.save { border-color: var(--primary); color: var(--primary); font-weight: bold; }
+        .action-btn.cancel { border-color: var(--text-muted); color: var(--text-muted); }
+
+        .edit-input, .edit-textarea, .edit-select {
+            margin-bottom: 8px;
+            background: #0f172a;
+            border: 1px solid var(--primary);
+        }
+        .edit-textarea { height: 80px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Voice Log Controller</h1>
+    
+    <div class="timer" id="timerDisplay">00:00</div>
+    <canvas id="visualizer"></canvas>
+
+    <div class="controls">
+        <button id="startBtn">🔴 Record</button>
+        <button id="pauseBtn" disabled>⏸️ Pause</button>
+        <button id="stopBtn" disabled>⏹️ Save Log</button>
+    </div>
+
+    <div class="section-title">Log Metadata</div>
+    <div class="meta-input-group">
+        <div>
+            <label for="logTitle">Log Title</label>
+            <input type="text" id="logTitle" value="Voice Entry">
+        </div>
+        <div>
+            <label for="logTag">Category Tag</label>
+            <div style="display: flex; gap: 5px;">
+                <select id="logTag">
+                    <option value="personal">🌸 Personal</option>
+                    <option value="work">💼 Work</option>
+                    <option value="idea">💡 Idea</option>
+                    <option value="journal">📖 Journal</option>
+                </select>
+                <button id="addTagBtn" style="padding: 8px 12px; background: #475569; color: white; margin: 0; border-radius: 6px;">+</button>
+            </div>
+        </div>
+    </div>
+    <div style="text-align: left; font-size: 13px;">
+        <label for="logNotes">Summary / Log Notes</label>
+        <textarea id="logNotes" placeholder="Add keywords, thoughts, or bullet points here..."></textarea>
+    </div>
+</div>
+
+<div class="catalog-container">
+    <div class="section-title">🗂️ Permanent Voice Catalogue</div>
+    <input type="text" id="searchBar" class="search-box" placeholder="🔍 Search notes, titles, or tags...">
+    
+    <div id="catalogList"></div>
+</div>
+
+<script>
+    let mediaRecorder, audioChunks = [], startTime, timerInterval, elapsedTime = 0;
+    let audioContext, analyser, dataArray, canvasContext, source, animationFrameId;
+
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const canvas = document.getElementById('visualizer');
+    const catalogList = document.getElementById('catalogList');
+    const searchBar = document.getElementById('searchBar');
+    const addTagBtn = document.getElementById('addTagBtn');
+    const logTagSelect = document.getElementById('logTag');
+    
+    if (canvas) {
+        canvasContext = canvas.getContext('2d');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        loadCatalog();
+        loadCustomTags();
+    });
+
+    if (searchBar) {
+        searchBar.addEventListener('input', filterCatalog);
+    }
+
+    if (addTagBtn) {
+        addTagBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const newTag = prompt("Enter custom tag name (e.g. ProjectX, Reminders):");
+            if (newTag) {
+                const sanitizedTag = newTag.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+                if (!sanitizedTag) return alert("Invalid tag name.");
+                
+                let customTags = JSON.parse(localStorage.getItem('customVoiceTags')) || [];
+                if (!customTags.includes(sanitizedTag)) {
+                    customTags.push(sanitizedTag);
+                    localStorage.setItem('customVoiceTags', JSON.stringify(customTags));
+                    addTagToDropdown(sanitizedTag);
+                    logTagSelect.value = sanitizedTag;
+                } else {
+                    alert("This tag already exists!");
+                }
+            }
+        });
+    }
+
+    if (startBtn) {
+        startBtn.addEventListener('click', async () => {
+            audioChunks = [];
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                setupVisualizer(stream);
+
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                    convertToBase64AndSave(blob);
+                    resetUI();
+                };
+
+                mediaRecorder.start(250);
+                startTime = Date.now() - elapsedTime;
+                startTimer();
+                toggleButtons(true);
+            } catch (err) { alert("Microphone access required."); }
+        });
+    }
+
+    if (pauseBtn) {
+        pauseBtn.addEventListener('click', () => {
+            if (mediaRecorder && mediaRecorder.state === "recording") {
+                mediaRecorder.pause(); clearInterval(timerInterval); elapsedTime = Date.now() - startTime; pauseBtn.innerText = "▶️ Resume";
+            } else if (mediaRecorder && mediaRecorder.state === "paused") {
+                mediaRecorder.resume(); startTime = Date.now() - elapsedTime; startTimer(); pauseBtn.innerText = "⏸️ Pause";
+            }
+        });
+    }
+
+    if (stopBtn) {
+        stopBtn.addEventListener('click', () => {
+            if (mediaRecorder) {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                cancelAnimationFrame(animationFrameId);
+            }
+        });
+    }
+
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            const totalSeconds = Math.floor((Date.now() - startTime) / 1000);
+            timerDisplay.innerText = `${String(Math.floor(totalSeconds / 60)).padStart(2, '0')}:${String(totalSeconds % 60).padStart(2, '0')}`;
+        }, 1000);
+    }
+
+    function resetUI() {
+        clearInterval(timerInterval); elapsedTime = 0; timerDisplay.innerText = "00:00";
+        toggleButtons(false); if(pauseBtn) pauseBtn.innerText = "⏸️ Pause";
+        if (canvasContext && canvas) canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+        document.getElementById('logNotes').value = '';
+    }
+
+    function toggleButtons(isRecording) {
+        if(startBtn) startBtn.disabled = isRecording; 
+        if(pauseBtn) pauseBtn.disabled = !isRecording; 
+        if(stopBtn)
