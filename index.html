@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Web Audio Recorder</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f6f9;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        h1 { color: #333; margin-bottom: 20px; }
+        button {
+            font-size: 16px;
+            padding: 12px 24px;
+            margin: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        #startBtn { background-color: #2ec4b6; color: white; }
+        #startBtn:hover { background-color: #20a498; }
+        #stopBtn { background-color: #e71d36; color: white; }
+        #stopBtn:hover { background-color: #c11224; }
+        button:disabled {
+            background-color: #cccccc !important;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 15px;
+            font-weight: 500;
+            color: #666;
+        }
+        audio {
+            margin-top: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Web Audio Recorder</h1>
+    <button id="startBtn">Start Recording</button>
+    <button id="stopBtn" disabled>Stop Recording</button>
+    <div id="status">Status: Idle</div>
+    <audio id="audioPlayback" controls></audio>
+</div>
+
+<script>
+    let mediaRecorder;
+    let audioChunks = [];
+
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const statusDiv = document.getElementById('status');
+    const audioPlayback = document.getElementById('audioPlayback');
+
+    startBtn.addEventListener('click', async () => {
+        audioChunks = []; // Clear previous data
+        
+        try {
+            // Request microphone access from the browser
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            mediaRecorder = new MediaRecorder(stream);
+            
+            // Collect audio data as it becomes available
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+
+            // When recording stops, compile data into a playable audio file
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                audioPlayback.src = audioUrl;
+                audioPlayback.style.display = 'block'; // Show the audio player
+                statusDiv.innerText = "Status: Recording saved! Click play below.";
+            };
+
+            mediaRecorder.start();
+            statusDiv.innerText = "Status: Recording...";
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            audioPlayback.style.display = 'none'; // Hide player while recording new audio
+
+        } catch (err) {
+            console.error("Error accessing microphone:", err);
+            statusDiv.innerText = "Status: Error accessing microphone. Ensure permissions are granted.";
+        }
+    });
+
+    stopBtn.addEventListener('click', () => {
+        // Stop the recording logic
+        mediaRecorder.stop();
+        
+        // Stop the actual microphone hardware stream to turn off the recording light
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+    });
+</script>
+
+</body>
+</html>
