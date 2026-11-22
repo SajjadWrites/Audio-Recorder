@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Log Cataloger</title>
+    <title>Voice Codex</title>
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
     <meta name="theme-color" content="#1e293b">
     <style>
         :root {
@@ -204,7 +206,7 @@
 <body>
 
 <div class="container">
-    <h1>Voice Log Controller</h1>
+    <h1>Voice Codex</h1>
     
     <div class="timer" id="timerDisplay">00:00</div>
     <canvas id="visualizer"></canvas>
@@ -241,7 +243,7 @@
 </div>
 
 <div class="catalog-container">
-    <div class="section-title">🗂️ Permanent Voice Catalogue</div>
+    <div class="section-title">🗂️ Voice Codex Archive</div>
     <input type="text" id="searchBar" class="search-box" placeholder="🔍 Search notes, titles, or tags...">
     
     <div id="catalogList"></div>
@@ -251,6 +253,7 @@
     let mediaRecorder, audioChunks = [], startTime, timerInterval, elapsedTime = 0;
     let audioContext, analyser, dataArray, canvasContext, source, animationFrameId;
     let db = null;
+    let activeAudioURLs = [];
 
     const startBtn = document.getElementById('startBtn');
     const pauseBtn = document.getElementById('pauseBtn');
@@ -264,7 +267,7 @@
     
     if (canvas) canvasContext = canvas.getContext('2d');
 
-    // --- IndexedDB Configuration Engine (Unlimited Storage Setup) ---
+    // --- IndexedDB Configuration Engine ---
     const dbRequest = indexedDB.open("VoiceLogDatabase", 1);
     
     dbRequest.onupgradeneeded = (e) => {
@@ -387,7 +390,7 @@
             notes: document.getElementById('logNotes').value || 'No descriptions added.',
             date: new Date().toLocaleDateString(),
             time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-            audioBlob: blob // Stored safely as raw binary data
+            audioBlob: blob
         };
 
         const transaction = db.transaction(["logs"], "readwrite");
@@ -419,6 +422,10 @@
     // --- Read and Render Objects From IndexedDB ---
     function loadCatalog() {
         if (!db || !catalogList) return;
+
+        // Revoke previous Blob URLs before re-rendering to free memory
+        activeAudioURLs.forEach(url => URL.revokeObjectURL(url));
+        activeAudioURLs = [];
         catalogList.innerHTML = '';
         
         const transaction = db.transaction(["logs"], "readonly");
@@ -427,7 +434,6 @@
 
         request.onsuccess = (e) => {
             const logs = e.target.result;
-            // Sort to keep newest entries on top
             logs.sort((a, b) => b.id - a.id);
 
             if(logs.length === 0) {
@@ -444,8 +450,8 @@
                 card.id = `log-${log.id}`;
                 card.setAttribute('data-search', `${log.title} ${log.tag} ${log.notes}`.toLowerCase());
                 
-                // Create object URL out of raw audio Blob safely
                 const audioURL = URL.createObjectURL(log.audioBlob);
+                activeAudioURLs.push(audioURL);
                 
                 card.innerHTML = `
                     <div class="log-view-mode">
@@ -543,6 +549,7 @@
                 a.href = url; 
                 a.download = `${log.title}.webm`; 
                 a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
             }
         };
     };
@@ -587,8 +594,8 @@
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./sw.js')
-                .then(reg => console.log('PWA Active'))
-                .catch(err => console.log('SW Error'));
+                .then(reg => console.log('Voice Codex PWA Active:', reg.scope))
+                .catch(err => console.error('SW Registration Error:', err));
         });
     }
 </script>
