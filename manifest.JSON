@@ -1,17 +1,30 @@
 {
-  "name": "Web Audio Recorder",
-  "short_name": "AudioRec",
-  "start_url": "./index.html",
+  "name": "Voice Log Cataloger",
+  "short_name": "VoiceLogs",
+  "description": "Local-first voice recorder and searchable audio log catalog.",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#1e293b",
-  "orientation": "portrait",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/1082/1082810.png",
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
