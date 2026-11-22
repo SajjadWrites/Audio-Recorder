@@ -1,7 +1,7 @@
 {
-  "name": "Voice Log Cataloger",
-  "short_name": "VoiceLogs",
-  "description": "Local-first voice recorder and searchable audio log catalog.",
+  "name": "Voice Codex",
+  "short_name": "Voice Codex",
+  "description": "Local-first voice recorder and searchable audio log archive.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
